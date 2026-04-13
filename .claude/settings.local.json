@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.si.edu)",
+      "WebFetch(domain:www.gbif.org)",
+      "WebFetch(domain:www.flickr.com)",
+      "WebFetch(domain:metmuseum.github.io)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:techdocs.gbif.org)",
+      "WebFetch(domain:api.europeana.eu)",
+      "WebFetch(domain:archive.org)",
+      "WebFetch(domain:edan.si.edu)"
+    ]
+  }
+}
