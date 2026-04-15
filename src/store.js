@@ -1,73 +1,101 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+const DEFAULT_CONFIG = {
+  aiProvider: 'ollama',
+  aiUrl: 'http://localhost:11434',
+  aiModel: 'llama3.2',
+  aiKey: '',
+  imgProvider: 'all',
+  imgKey: '',
+  googleCx: '',
+}
+
+function sanitizePersistedConfig(config = {}) {
+  return {
+    aiProvider: config.aiProvider ?? DEFAULT_CONFIG.aiProvider,
+    aiUrl: config.aiUrl ?? DEFAULT_CONFIG.aiUrl,
+    aiModel: config.aiModel ?? DEFAULT_CONFIG.aiModel,
+    imgProvider: config.imgProvider ?? DEFAULT_CONFIG.imgProvider,
+  }
+}
+
 export const useStore = create(
   persist(
-    (set, get) => ({
-  // ── STEP ────────────────────────────────────────────
-  step: 1,
-  setStep: (step) => set({ step }),
-
-  // ── CONFIG ──────────────────────────────────────────
-  config: {
-    aiProvider:  'ollama',
-    aiUrl:       'http://localhost:11434',
-    aiModel:     'llama3.2',
-    aiKey:       '',
-    imgProvider: 'all',
-    imgKey:      '',
-    googleCx:    '',
-  },
-  setConfig: (patch) =>
-    set((s) => ({ config: { ...s.config, ...patch } })),
-
-  // ── DOCUMENT ────────────────────────────────────────
-  docName:     '',
-  docText:     '',
-  docHtml:     '',
-  sections:    [],   // [{idx, text, html, isHeading}]
-  setDocument: ({ name, text, html, sections }) =>
-    set({ docName: name, docText: text, docHtml: html, sections }),
-
-  // ── TOPICS (AI output) ──────────────────────────────
-  topics:     [],   // [{id, title, description, imageQuery, sectionIdx}]
-  setTopics:  (topics) => set({ topics }),
-  updateTopic: (id, patch) =>
-    set((s) => ({
-      topics: s.topics.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-    })),
-
-  // ── IMAGE SEARCH RESULTS ────────────────────────────
-  imageResults:    {},   // topicId → [{id, thumb, src, photographer, source, attribution}]
-  imageLoading:    {},   // topicId → bool
-  setImageResults: (topicId, imgs) =>
-    set((s) => ({ imageResults: { ...s.imageResults, [topicId]: imgs } })),
-  setImageLoading: (topicId, loading) =>
-    set((s) => ({ imageLoading: { ...s.imageLoading, [topicId]: loading } })),
-
-  // ── SELECTED IMAGES ─────────────────────────────────
-  selected:    {},   // topicId → image object
-  selectImage: (topicId, img) =>
-    set((s) => ({ selected: { ...s.selected, [topicId]: img } })),
-  clearSelected: () => set({ selected: {} }),
-
-  // ── GENERATION STATE ────────────────────────────────
-  generating:    false,
-  generationMsg: '',
-  setGenerating: (generating, msg = '') => set({ generating, generationMsg: msg }),
-
-  // ── RESET ───────────────────────────────────────────
-  reset: () =>
-    set({
+    (set) => ({
       step: 1,
-      docName: '', docText: '', docHtml: '', sections: [],
-      topics: [], imageResults: {}, imageLoading: {}, selected: {},
-      generating: false, generationMsg: '',
-    }),
+      setStep: (step) => set({ step }),
+
+      config: { ...DEFAULT_CONFIG },
+      setConfig: (patch) =>
+        set((state) => ({ config: { ...state.config, ...patch } })),
+
+      docName: '',
+      docText: '',
+      docHtml: '',
+      sections: [],
+      setDocument: ({ name, text, html, sections }) =>
+        set({ docName: name, docText: text, docHtml: html, sections }),
+
+      topics: [],
+      setTopics: (topics) => set({ topics }),
+      updateTopic: (id, patch) =>
+        set((state) => ({
+          topics: state.topics.map((topic) => (topic.id === id ? { ...topic, ...patch } : topic)),
+        })),
+
+      imageResults: {},
+      imageLoading: {},
+      setImageResults: (topicId, imgs) =>
+        set((state) => ({ imageResults: { ...state.imageResults, [topicId]: imgs } })),
+      setImageLoading: (topicId, loading) =>
+        set((state) => ({ imageLoading: { ...state.imageLoading, [topicId]: loading } })),
+
+      selected: {},
+      selectImage: (topicId, img) =>
+        set((state) => {
+          if (!img) {
+            const nextSelected = { ...state.selected }
+            delete nextSelected[topicId]
+            return { selected: nextSelected }
+          }
+
+          return { selected: { ...state.selected, [topicId]: img } }
+        }),
+      clearSelected: () => set({ selected: {} }),
+
+      generating: false,
+      generationMsg: '',
+      setGenerating: (generating, msg = '') => set({ generating, generationMsg: msg }),
+
+      reset: () =>
+        set({
+          step: 1,
+          docName: '',
+          docText: '',
+          docHtml: '',
+          sections: [],
+          topics: [],
+          imageResults: {},
+          imageLoading: {},
+          selected: {},
+          generating: false,
+          generationMsg: '',
+        }),
     }),
     {
-      name: 'imagenea-config',          // localStorage key
-      partialize: (s) => ({ config: s.config }),  // solo persiste config
+      name: 'imagenea-config',
+      version: 2,
+      partialize: (state) => ({ config: sanitizePersistedConfig(state.config) }),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...(persistedState ?? {}),
+        config: {
+          ...currentState.config,
+          ...sanitizePersistedConfig(persistedState?.config),
+        },
+      }),
     }
   )
 )
+
