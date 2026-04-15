@@ -55,6 +55,7 @@ Credentials and search engine identifiers are runtime-only and are not written t
 - Workflow steps are lazy-loaded to reduce the initial bundle.
 - `mammoth` is dynamically imported during document upload.
 - Heavy export and image-search code stays inside later workflow chunks.
+- The Vite production build uses the `/imagenea/` base path so lazy-loaded chunks resolve correctly when hosted from the repository subpath.
 
 ## Known Boundaries
 

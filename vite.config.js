@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === 'serve' ? '/' : '/imagenea/',
   plugins: [react()],
   define: {
     global: 'globalThis',
@@ -14,4 +15,4 @@ export default defineConfig({
   optimizeDeps: {
     include: ['buffer', 'mammoth', 'docx', 'file-saver'],
   },
-})
+}))

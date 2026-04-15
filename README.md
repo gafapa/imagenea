@@ -43,6 +43,8 @@ npm run dev
 npm run build
 ```
 
+The production build is configured to run under the `/imagenea/` base path so it can be served from the repository subpath without breaking lazy-loaded assets.
+
 ## Application Flow
 
 1. Configure AI and image providers.
@@ -56,6 +58,7 @@ npm run build
 - API keys are kept only in runtime state and are no longer persisted to browser storage.
 - Provider preferences such as selected engines and model names are persisted locally.
 - The export pipeline supports multiple images assigned to the same document section.
+- Vite uses `/imagenea/` as the production base path and `/` during local development.
 
 ## Repository Documents
 
