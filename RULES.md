@@ -3,7 +3,8 @@
 ## Language
 
 - Use English for code identifiers, comments, commit messages, and Markdown documentation.
-- User-facing UI copy may stay in Spanish unless a product decision changes it.
+- Keep user-facing UI copy in the translation layer so every supported locale stays consistent.
+- When adding visible text, update all supported locales: Spanish, English, French, German, Portuguese, Galician, Catalan, and Basque.
 
 ## State and Security
 

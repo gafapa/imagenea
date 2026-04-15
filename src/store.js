@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { DEFAULT_LANGUAGE } from './lib/i18n'
 
 const DEFAULT_CONFIG = {
   aiProvider: 'ollama',
@@ -25,6 +26,9 @@ export const useStore = create(
     (set) => ({
       step: 1,
       setStep: (step) => set({ step }),
+
+      language: DEFAULT_LANGUAGE,
+      setLanguage: (language) => set({ language }),
 
       config: { ...DEFAULT_CONFIG },
       setConfig: (patch) =>
@@ -85,11 +89,15 @@ export const useStore = create(
     }),
     {
       name: 'imagenea-config',
-      version: 2,
-      partialize: (state) => ({ config: sanitizePersistedConfig(state.config) }),
+      version: 3,
+      partialize: (state) => ({
+        language: state.language,
+        config: sanitizePersistedConfig(state.config),
+      }),
       merge: (persistedState, currentState) => ({
         ...currentState,
         ...(persistedState ?? {}),
+        language: persistedState?.language ?? currentState.language,
         config: {
           ...currentState.config,
           ...sanitizePersistedConfig(persistedState?.config),
@@ -98,4 +106,3 @@ export const useStore = create(
     }
   )
 )
-

@@ -1,32 +1,35 @@
 import { Settings2, FileText, Images } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
-
-const TABS = [
-  { n: 1, label: 'Configuración', Icon: Settings2 },
-  { n: 2, label: 'Documento',     Icon: FileText  },
-  { n: 3, label: 'Imágenes',      Icon: Images    },
-]
+import { useI18n } from '../hooks/useI18n'
 
 export default function StepBar() {
-  const step    = useStore((s) => s.step)
-  const setStep = useStore((s) => s.setStep)
+  const { t } = useI18n()
+  const step = useStore((state) => state.step)
+  const setStep = useStore((state) => state.setStep)
+
+  const tabs = [
+    { n: 1, label: t('steps.config'), Icon: Settings2 },
+    { n: 2, label: t('steps.document'), Icon: FileText },
+    { n: 3, label: t('steps.images'), Icon: Images },
+  ]
 
   return (
-    <nav className="flex gap-1 border-b border-surface-border mb-6">
-      {TABS.map(({ n, label, Icon }) => {
+    <nav className="flex gap-1 border-b border-surface-border mb-6" aria-label="Workflow steps">
+      {tabs.map(({ n, label, Icon }) => {
         const isActive = n === step
+
         return (
           <button
             key={n}
+            type="button"
             onClick={() => setStep(n)}
-            className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors rounded-t-lg focus:outline-none
-              ${isActive
-                ? 'text-indigo-300'
-                : 'text-slate-500 hover:text-slate-300'
-              }`}
+            className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors rounded-t-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+              isActive ? 'text-indigo-300' : 'text-slate-500 hover:text-slate-300'
+            }`}
+            aria-current={isActive ? 'step' : undefined}
           >
-            <Icon className="w-4 h-4 flex-shrink-0" />
+            <Icon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             {label}
             {isActive && (
               <motion.div

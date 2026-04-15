@@ -15,4 +15,16 @@ export default defineConfig(({ command }) => ({
   optimizeDeps: {
     include: ['buffer', 'mammoth', 'docx', 'file-saver'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'zustand'],
+          motion: ['framer-motion', 'lucide-react'],
+          export: ['docx', 'file-saver'],
+          upload: ['mammoth'],
+        },
+      },
+    },
+  },
 }))

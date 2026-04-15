@@ -28,10 +28,36 @@ export const PROVIDERS = {
   unsplash:    { label: 'Unsplash',                free: false, hint: 'Access key gratuita en unsplash.com/developers' },
 }
 
+const searchCache = new Map()
+
+function getCacheKey(query, config) {
+  return [
+    config.imgProvider,
+    query.trim().toLowerCase(),
+    config.imgKey ?? '',
+    config.imgProvider === 'google' ? config.googleCx : '',
+  ].join('::')
+}
+
 export async function searchImages(query, config) {
   const q = query.trim()
   if (!q) return []
 
+  const cacheKey = getCacheKey(q, config)
+  if (searchCache.has(cacheKey)) {
+    return searchCache.get(cacheKey)
+  }
+
+  const request = executeSearch(q, config).catch((error) => {
+    searchCache.delete(cacheKey)
+    throw error
+  })
+
+  searchCache.set(cacheKey, request)
+  return request
+}
+
+async function executeSearch(q, config) {
   switch (config.imgProvider) {
     case 'all':         return searchAllFree(q)
     case 'openverse':   return searchOpenverse(q)

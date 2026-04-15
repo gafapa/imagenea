@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   AlertCircle,
@@ -14,11 +14,27 @@ import {
   Wand2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { useStore } from '../../store'
 import { generateAndDownload } from '../../lib/docx'
 import { searchImages } from '../../lib/images'
+import { useStore } from '../../store'
+import { useI18n } from '../../hooks/useI18n'
+
+async function runWithConcurrency(items, limit, worker) {
+  const queue = [...items]
+  const workers = Array.from({ length: Math.min(limit, queue.length) }, async () => {
+    while (queue.length > 0) {
+      const item = queue.shift()
+      if (item) {
+        await worker(item)
+      }
+    }
+  })
+
+  await Promise.all(workers)
+}
 
 export default function AnalysisStep() {
+  const { t } = useI18n()
   const {
     config,
     sections,
@@ -37,63 +53,88 @@ export default function AnalysisStep() {
   } = useStore()
 
   const [searchingAll, setSearchingAll] = useState(false)
+  const latestRequestsRef = useRef({})
+
   const selectedCount = Object.values(selected).filter(Boolean).length
 
   async function doSearch(topicId, queryOverride) {
     const topic = topics.find((item) => item.id === topicId)
     if (!topic) return
 
-    const query = queryOverride ?? topic.imageQuery
+    const query = (queryOverride ?? topic.imageQuery).trim()
+    if (!query) return
+
     if (queryOverride) {
-      updateTopic(topicId, { imageQuery: queryOverride })
+      updateTopic(topicId, { imageQuery: query })
     }
+
+    const requestId = `${Date.now()}-${Math.random()}`
+    latestRequestsRef.current[topicId] = requestId
 
     setImageLoading(topicId, true)
     setImageResults(topicId, [])
 
     try {
       const images = await searchImages(query, config)
+
+      if (latestRequestsRef.current[topicId] !== requestId) {
+        return
+      }
+
       setImageResults(topicId, images)
 
       if (!images.length) {
-        toast(`Sin resultados para "${query}"`, { icon: 'i' })
+        toast(t('analysis.noResults', { query }), { icon: 'i' })
       }
     } catch (error) {
-      toast.error(`[${config.imgProvider}] ${error.message}`)
+      if (latestRequestsRef.current[topicId] === requestId) {
+        toast.error(error.message)
+      }
       console.error(error)
+    } finally {
+      if (latestRequestsRef.current[topicId] === requestId) {
+        setImageLoading(topicId, false)
+      }
     }
-
-    setImageLoading(topicId, false)
   }
 
   async function searchAll() {
     setSearchingAll(true)
 
-    for (const topic of topics) {
-      await doSearch(topic.id)
+    try {
+      await runWithConcurrency(topics, 3, async (topic) => {
+        await doSearch(topic.id)
+      })
+      toast.success(t('analysis.searchComplete'))
+    } finally {
+      setSearchingAll(false)
     }
-
-    setSearchingAll(false)
-    toast.success('Busqueda completada')
   }
 
   async function generate() {
     if (selectedCount === 0) {
-      toast.error('Selecciona al menos una imagen')
+      toast.error(t('analysis.selectOne'))
       return
     }
 
-    setGenerating(true, 'Iniciando...')
+    setGenerating(true, t('app.loadingStep'))
 
     try {
-      await generateAndDownload(sections, topics, selected, (msg) => setGenerating(true, msg))
-      toast.success(`Documento generado con ${selectedCount} imagen${selectedCount > 1 ? 'es' : ''}`)
-    } catch (error) {
-      toast.error('Error generando: ' + error.message)
-      console.error(error)
-    }
+      await generateAndDownload(sections, topics, selected, {
+        filename: 'imagenea-document.docx',
+        onProgress: (topic) => setGenerating(true, t('analysis.downloadingImage', { title: topic.title })),
+        missingImageLabel: t('analysis.missingImage'),
+        unknownPhotographer: t('analysis.unknownPhotographer'),
+        unknownSource: t('analysis.unknownSource'),
+      })
 
-    setGenerating(false)
+      toast.success(t('analysis.generated', { count: selectedCount }))
+    } catch (error) {
+      toast.error(t('analysis.generateError', { message: error.message }))
+      console.error(error)
+    } finally {
+      setGenerating(false)
+    }
   }
 
   return (
@@ -102,11 +143,10 @@ export default function AnalysisStep() {
         <div>
           <h2 className="font-semibold text-slate-100 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-indigo-400" />
-            Temas detectados
+            {t('analysis.title')}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            {topics.length} temas · {selectedCount}/{topics.length} imagen{selectedCount !== 1 ? 'es' : ''}{' '}
-            seleccionada{selectedCount !== 1 ? 's' : ''}
+            {t('analysis.summary', { selected: selectedCount, total: topics.length })}
           </p>
         </div>
 
@@ -122,7 +162,7 @@ export default function AnalysisStep() {
             ) : (
               <SearchIcon className="w-3.5 h-3.5" />
             )}
-            Buscar todas
+            {t('analysis.searchAll')}
           </button>
 
           <button
@@ -136,13 +176,13 @@ export default function AnalysisStep() {
             ) : (
               <Download className="w-4 h-4" />
             )}
-            {generating ? generationMsg.slice(0, 24) || 'Generando...' : 'Descargar Word'}
+            {generating ? generationMsg.slice(0, 24) || t('app.loadingStep') : t('analysis.download')}
           </button>
         </div>
       </div>
 
       <div className="flex gap-4 items-start">
-        <div className="hidden lg:block w-64 xl:w-72 flex-shrink-0 sticky top-[72px]">
+        <div className="hidden lg:block w-64 xl:w-72 flex-shrink-0 sticky top-[88px]">
           <DocPreview sections={sections} topics={topics} selected={selected} />
         </div>
 
@@ -158,7 +198,11 @@ export default function AnalysisStep() {
               onSearch={(query) => doSearch(topic.id, query)}
               onSelect={(img) => selectImage(topic.id, img)}
               onQueryChange={(query) => updateTopic(topic.id, { imageQuery: query })}
-              onSectionChange={(value) => updateTopic(topic.id, { sectionIdx: parseInt(value, 10) || 0 })}
+              onSectionChange={(value) =>
+                updateTopic(topic.id, {
+                  sectionIdx: Math.min(Math.max(0, parseInt(value, 10) || 0), Math.max(0, sections.length - 1)),
+                })
+              }
               maxSection={Math.max(0, sections.length - 1)}
             />
           ))}
@@ -167,7 +211,7 @@ export default function AnalysisStep() {
 
       <div className="flex justify-between items-center pt-1">
         <button type="button" onClick={reset} className="btn-ghost">
-          <ChevronLeft className="w-4 h-4" /> Nuevo documento
+          <ChevronLeft className="w-4 h-4" /> {t('analysis.newDocument')}
         </button>
 
         <button
@@ -181,7 +225,7 @@ export default function AnalysisStep() {
           ) : (
             <Download className="w-4 h-4" />
           )}
-          {generating ? 'Generando...' : `Descargar Word (${selectedCount})`}
+          {generating ? generationMsg.slice(0, 24) || t('app.loadingStep') : `${t('analysis.download')} (${selectedCount})`}
         </button>
       </div>
     </div>
@@ -189,6 +233,8 @@ export default function AnalysisStep() {
 }
 
 function DocPreview({ sections, topics, selected }) {
+  const { t } = useI18n()
+
   const insertMap = useMemo(() => {
     const map = {}
 
@@ -207,11 +253,11 @@ function DocPreview({ sections, topics, selected }) {
   const total = topics.length
 
   return (
-    <div className="glass rounded-2xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 140px)' }}>
+    <div className="glass rounded-2xl overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 160px)' }}>
       <div className="px-4 py-3 border-b border-surface-border flex items-center justify-between flex-shrink-0">
         <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
           <FileText className="w-3.5 h-3.5 text-indigo-400" />
-          Vista previa
+          {t('analysis.preview')}
         </span>
         <span
           className={`badge text-xs border ${
@@ -225,7 +271,7 @@ function DocPreview({ sections, topics, selected }) {
       </div>
 
       <div className="overflow-y-auto flex-1 p-3 space-y-1 text-[11px] leading-relaxed">
-        {sections.length === 0 && <p className="text-slate-600 text-center py-8">Sin secciones cargadas</p>}
+        {sections.length === 0 && <p className="text-slate-600 text-center py-8">{t('analysis.noSections')}</p>}
 
         {sections.map((section, index) => (
           <div key={index}>
@@ -281,7 +327,7 @@ function DocPreview({ sections, topics, selected }) {
 
       <div className="border-t border-surface-border px-3 py-2 flex-shrink-0">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-slate-500">Imagenes colocadas</span>
+          <span className="text-[10px] text-slate-500">{t('analysis.imagesPlaced')}</span>
           <span className="text-[10px] text-slate-400">{selectedCount}/{total}</span>
         </div>
         <div className="h-1 rounded-full bg-surface-hover overflow-hidden">
@@ -308,6 +354,7 @@ function TopicCard({
   onSectionChange,
   maxSection,
 }) {
+  const { t } = useI18n()
   const [expanded, setExpanded] = useState(true)
   const [localQuery, setLocalQuery] = useState(topic.imageQuery)
   const panelId = `topic-panel-${topic.id}`
@@ -368,7 +415,7 @@ function TopicCard({
             <div className="px-4 pb-4 space-y-3 border-t border-surface-border">
               <div className="flex flex-wrap items-end gap-3 pt-3">
                 <div className="flex-1 min-w-[160px]">
-                  <label className="block text-xs text-slate-500 mb-1">Busqueda (ingles)</label>
+                  <label className="block text-xs text-slate-500 mb-1">{t('analysis.searchLabel')}</label>
                   <input
                     type="text"
                     value={localQuery}
@@ -386,7 +433,7 @@ function TopicCard({
                 </div>
 
                 <div className="w-20">
-                  <label className="block text-xs text-slate-500 mb-1">Parrafo #</label>
+                  <label className="block text-xs text-slate-500 mb-1">{t('analysis.paragraphLabel')}</label>
                   <input
                     type="number"
                     value={topic.sectionIdx}
@@ -411,7 +458,7 @@ function TopicCard({
                   ) : (
                     <SearchIcon className="w-3.5 h-3.5" />
                   )}
-                  Buscar
+                  {t('common.search')}
                 </button>
               </div>
 
@@ -419,7 +466,7 @@ function TopicCard({
                 <div className="space-y-1.5">
                   <p className="text-xs text-slate-500 flex items-center gap-1">
                     <Wand2 className="w-3 h-3 text-violet-400" />
-                    Alternativas:
+                    {t('analysis.alternatives')}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {topic.altQueries.map((query, altIndex) => (
@@ -451,9 +498,7 @@ function TopicCard({
                   className="flex items-start gap-2 rounded-xl bg-amber-900/20 border border-amber-700/30 px-3 py-2.5"
                 >
                   <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-300">
-                    Sin resultados. Prueba una alternativa o cambia el proveedor de imagenes.
-                  </p>
+                  <p className="text-xs text-amber-300">{t('analysis.noResultsHint')}</p>
                 </motion.div>
               )}
 
@@ -470,8 +515,7 @@ function TopicCard({
                     type="button"
                     onClick={() => onSelect(null)}
                     className="text-slate-500 hover:text-red-400 flex-shrink-0 p-1"
-                    title="Deseleccionar"
-                    aria-label={`Deseleccionar imagen para ${topic.title}`}
+                    aria-label={t('analysis.deselect', { title: topic.title })}
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                   </button>
@@ -493,7 +537,7 @@ function TopicCard({
               {!loading && results.length === 0 && !topic.altQueries?.length && (
                 <div className="flex flex-col items-center gap-2 py-6 text-slate-600">
                   <ImageOff className="w-8 h-8" />
-                  <p className="text-xs">Haz clic en "Buscar" para encontrar imagenes</p>
+                  <p className="text-xs">{t('analysis.emptyState')}</p>
                 </div>
               )}
             </div>
@@ -505,6 +549,8 @@ function TopicCard({
 }
 
 function ImageGrid({ results, selected, onSelect, topicTitle }) {
+  const { t } = useI18n()
+
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
       {results.map((img) => {
@@ -520,7 +566,7 @@ function ImageGrid({ results, selected, onSelect, topicTitle }) {
             className={`relative aspect-video rounded-xl overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 group ${isSelected ? 'img-selected' : ''}`}
             title={`${img.photographer} - ${img.source}\n${img.license}`}
             aria-pressed={isSelected}
-            aria-label={`${isSelected ? 'Deseleccionar' : 'Seleccionar'} imagen de ${img.source} para ${topicTitle}`}
+            aria-label={isSelected ? t('analysis.deselect', { title: topicTitle }) : `${t('common.search')} ${topicTitle}`}
           >
             <img
               src={img.thumb}
@@ -558,4 +604,3 @@ function ImageGrid({ results, selected, onSelect, topicTitle }) {
     </div>
   )
 }
-

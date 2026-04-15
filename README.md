@@ -8,6 +8,7 @@ Imagenea is a Vite + React application that enriches Word documents with AI-assi
 - Searches multiple image providers for each detected topic.
 - Lets the user review, replace, and position images before export.
 - Generates a new `.docx` file with the selected images embedded after the chosen sections.
+- Supports Spanish, English, French, German, Portuguese, Galician, Catalan, and Basque from the UI.
 
 ## Stack
 
@@ -15,6 +16,7 @@ Imagenea is a Vite + React application that enriches Word documents with AI-assi
 - Vite 5
 - Tailwind CSS 3
 - Zustand for client state
+- Custom client-side i18n layer
 - Mammoth for `.docx` HTML conversion
 - `docx` for Word export
 
@@ -56,9 +58,10 @@ The production build is configured to run under the `/imagenea/` base path so it
 ## Configuration Notes
 
 - API keys are kept only in runtime state and are no longer persisted to browser storage.
-- Provider preferences such as selected engines and model names are persisted locally.
+- Provider preferences such as selected engines, model names, and the selected UI language are persisted locally.
 - The export pipeline supports multiple images assigned to the same document section.
 - Vite uses `/imagenea/` as the production base path and `/` during local development.
+- The AI analysis prompt adapts topic titles and descriptions to the active UI language while keeping image queries in English.
 
 ## Repository Documents
 

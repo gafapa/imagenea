@@ -1,6 +1,7 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useStore } from './store'
+import { useI18n } from './hooks/useI18n'
 import Header from './components/Header'
 import StepBar from './components/StepBar'
 
@@ -15,15 +16,22 @@ const slide = {
 }
 
 function StepFallback() {
+  const { t } = useI18n()
+
   return (
-    <div className="glass p-6 text-sm text-slate-400">
-      Loading step...
+    <div className="glass p-6 text-sm text-slate-400" role="status" aria-live="polite">
+      {t('app.loadingStep')}
     </div>
   )
 }
 
 export default function App() {
   const step = useStore((state) => state.step)
+  const language = useStore((state) => state.language)
+
+  useEffect(() => {
+    document.documentElement.lang = language
+  }, [language])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -57,4 +65,3 @@ export default function App() {
     </div>
   )
 }
-

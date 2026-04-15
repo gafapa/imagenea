@@ -12,6 +12,8 @@ Imagenea is a client-side React application that transforms user-supplied docume
 - `src/App.jsx`: renders the shell and lazy-loads the active workflow step.
 - `src/components/Header.jsx`: top navigation bar.
 - `src/components/StepBar.jsx`: step navigation.
+- `src/lib/i18n.js` and `src/hooks/useI18n.js`: client-side translation catalog and hook.
+- `src/lib/providerMeta.js`: localized provider labels, hints, and onboarding guides.
 
 ### Workflow Steps
 
@@ -21,7 +23,7 @@ Imagenea is a client-side React application that transforms user-supplied docume
 
 ### State
 
-- `src/store.js`: Zustand store for workflow state, topic data, image results, selections, and runtime-only credentials.
+- `src/store.js`: Zustand store for workflow state, selected language, topic data, image results, selections, and runtime-only credentials.
 
 ### Service Layer
 
@@ -33,11 +35,11 @@ Imagenea is a client-side React application that transforms user-supplied docume
 
 1. The user configures AI and image providers.
 2. `UploadStep` reads `.docx` or `.txt` content and extracts sections.
-3. `analyzeDocument` sends a prompt to the selected AI provider.
+3. `analyzeDocument` sends a prompt to the selected AI provider and requests titles and descriptions in the active UI language.
 4. The AI response becomes `topics` in the Zustand store.
-5. `AnalysisStep` queries image providers for each topic.
+5. `AnalysisStep` queries image providers for each topic, reuses cached search responses, and limits bulk search concurrency.
 6. Selected images are stored by topic id.
-7. `generateAndDownload` rebuilds the document and inserts the selected images after the mapped sections.
+7. `generateAndDownload` lazy-loads export dependencies, rebuilds the document, and inserts the selected images after the mapped sections.
 
 ## Persistence Rules
 
@@ -47,6 +49,7 @@ Only non-sensitive preferences are persisted:
 - AI base URL
 - AI model
 - Image provider
+- UI language
 
 Credentials and search engine identifiers are runtime-only and are not written to local storage.
 
@@ -54,7 +57,8 @@ Credentials and search engine identifiers are runtime-only and are not written t
 
 - Workflow steps are lazy-loaded to reduce the initial bundle.
 - `mammoth` is dynamically imported during document upload.
-- Heavy export and image-search code stays inside later workflow chunks.
+- `docx` and `file-saver` are dynamically imported only during export.
+- Manual chunks split React, motion, upload parsing, and export dependencies.
 - The Vite production build uses the `/imagenea/` base path so lazy-loaded chunks resolve correctly when hosted from the repository subpath.
 
 ## Known Boundaries

@@ -1,16 +1,29 @@
-import {
-  AlignmentType,
-  Document,
-  HeadingLevel,
-  ImageRun,
-  Packer,
-  Paragraph,
-  TextRun,
-} from 'docx'
-import { saveAs } from 'file-saver'
 import { fetchImageBuffer } from './images'
 
-export async function generateAndDownload(sections, topics, selected, onProgress) {
+export async function generateAndDownload(sections, topics, selected, options = {}) {
+  const {
+    onProgress,
+    filename = 'imagenea-document.docx',
+    missingImageLabel = 'Image unavailable',
+    unknownPhotographer = 'Unknown',
+    unknownSource = 'Unknown source',
+  } = options
+
+  const [{ saveAs }, docxModule] = await Promise.all([
+    import('file-saver'),
+    import('docx'),
+  ])
+
+  const {
+    AlignmentType,
+    Document,
+    HeadingLevel,
+    ImageRun,
+    Packer,
+    Paragraph,
+    TextRun,
+  } = docxModule
+
   const insertMap = {}
 
   topics.forEach((topic) => {
@@ -43,7 +56,7 @@ export async function generateAndDownload(sections, topics, selected, onProgress
 
     for (const topic of insertMap[index] ?? []) {
       const img = selected[topic.id]
-      onProgress?.(`Descargando imagen: "${topic.title}"...`)
+      onProgress?.(topic)
 
       try {
         const buffer = await fetchImageBuffer(img.src)
@@ -67,7 +80,7 @@ export async function generateAndDownload(sections, topics, selected, onProgress
           new Paragraph({
             children: [
               new TextRun({
-                text: `${topic.title} - ${img.attribution ?? ((img.photographer ?? 'Desconocido') + ' (' + (img.source ?? 'Fuente desconocida') + ')')}`,
+                text: `${topic.title} - ${img.attribution ?? `${img.photographer ?? unknownPhotographer} (${img.source ?? unknownSource})`}`,
                 size: 18,
                 italics: true,
                 color: '64748b',
@@ -82,7 +95,7 @@ export async function generateAndDownload(sections, topics, selected, onProgress
           new Paragraph({
             children: [
               new TextRun({
-                text: `[Imagen no disponible: ${topic.title}]`,
+                text: `[${missingImageLabel}: ${topic.title}]`,
                 size: 20,
                 color: 'ef4444',
               }),
@@ -116,11 +129,10 @@ export async function generateAndDownload(sections, topics, selected, onProgress
   })
 
   const blob = await Packer.toBlob(doc)
-  saveAs(blob, 'documento_con_imagenes.docx')
+  saveAs(blob, filename)
 }
 
 function getExt(url) {
   const match = url.match(/\.(jpe?g|png|gif|webp)/i)
   return match ? match[1].toLowerCase().replace('jpeg', 'jpg') : 'jpg'
 }
-
