@@ -47,6 +47,22 @@ export const useStore = create(
         set((state) => ({
           topics: state.topics.map((topic) => (topic.id === id ? { ...topic, ...patch } : topic)),
         })),
+      addTopic: (topic) => set((state) => ({ topics: [...state.topics, topic] })),
+      removeTopic: (id) =>
+        set((state) => {
+          const nextImageResults = { ...state.imageResults }
+          const nextImageLoading = { ...state.imageLoading }
+          const nextSelected = { ...state.selected }
+          delete nextImageResults[id]
+          delete nextImageLoading[id]
+          delete nextSelected[id]
+          return {
+            topics: state.topics.filter((t) => t.id !== id),
+            imageResults: nextImageResults,
+            imageLoading: nextImageLoading,
+            selected: nextSelected,
+          }
+        }),
 
       imageResults: {},
       imageLoading: {},

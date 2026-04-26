@@ -11,7 +11,7 @@ export default function Header() {
   return (
     <header
       className="sticky top-0 z-40 border-b border-surface-border"
-      style={{ background: 'rgba(13,20,36,0.9)', backdropFilter: 'blur(16px)' }}
+      style={{ background: 'rgba(241,245,249,0.92)', backdropFilter: 'blur(16px)' }}
     >
       <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-14 py-2 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">

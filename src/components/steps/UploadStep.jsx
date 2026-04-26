@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { motion } from 'framer-motion'
 import { Sparkles, UploadCloud } from 'lucide-react'
@@ -26,6 +26,7 @@ export default function UploadStep() {
   const { t, language } = useI18n()
   const { config, setDocument, setTopics, setStep } = useStore()
   const [analyzing, setAnalyzing] = useState(false)
+  const textareaRef = useRef(null)
 
   const runAnalysis = useCallback(
     async (text, sections) => {
@@ -100,8 +101,7 @@ export default function UploadStep() {
   })
 
   async function handlePaste() {
-    const textarea = document.getElementById('paste-area')
-    const text = textarea?.value.trim()
+    const text = textareaRef.current?.value.trim() ?? ''
 
     if (!text || text.length < 50) {
       toast.error(t('upload.minChars'))
@@ -130,7 +130,7 @@ export default function UploadStep() {
     <div className="space-y-5">
       <div className="glass p-6">
         <h2 className="text-lg font-semibold mb-1">{t('upload.title')}</h2>
-        <p className="text-slate-400 text-sm">{t('upload.subtitle')}</p>
+        <p className="text-slate-500 text-sm">{t('upload.subtitle')}</p>
       </div>
 
       <div
@@ -146,24 +146,24 @@ export default function UploadStep() {
           transition={{ repeat: Infinity, duration: 1.5 }}
         >
           {analyzing ? (
-            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-indigo-600/20 flex items-center justify-center">
-              <Sparkles className="w-7 h-7 text-indigo-400 animate-pulse" />
+            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-indigo-50 flex items-center justify-center">
+              <Sparkles className="w-7 h-7 text-indigo-600 animate-pulse" />
             </div>
           ) : (
-            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-800 flex items-center justify-center">
-              <UploadCloud className="w-7 h-7 text-slate-400" />
+            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-100 flex items-center justify-center">
+              <UploadCloud className="w-7 h-7 text-slate-500" />
             </div>
           )}
         </motion.div>
 
         {analyzing ? (
           <>
-            <p className="font-medium text-indigo-400 mb-1">{t('upload.analyzing')}</p>
+            <p className="font-medium text-indigo-600 mb-1">{t('upload.analyzing')}</p>
             <p className="text-xs text-slate-500">{t('upload.preparing')}</p>
           </>
         ) : (
           <>
-            <p className="font-medium text-slate-300 mb-1">
+            <p className="font-medium text-slate-700 mb-1">
               {isDragActive ? t('upload.dropActive') : t('upload.dropIdle')}
             </p>
             <p className="text-xs text-slate-500">{t('upload.pickFile')}</p>
@@ -173,15 +173,17 @@ export default function UploadStep() {
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-800" />
+          <div className="w-full border-t border-slate-200" />
         </div>
         <div className="relative flex justify-center">
-          <span className="px-3 text-xs text-slate-600 bg-[#0d1424]">{t('upload.orPaste')}</span>
+          <span className="px-3 text-xs text-slate-500 bg-[#f1f5f9]">{t('upload.orPaste')}</span>
         </div>
       </div>
 
       <div className="glass p-4 space-y-3">
+        <label htmlFor="paste-area" className="sr-only">{t('upload.placeholder')}</label>
         <textarea
+          ref={textareaRef}
           id="paste-area"
           rows={7}
           className="input-base resize-none"

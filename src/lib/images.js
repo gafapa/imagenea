@@ -5,30 +5,30 @@
  * Optional (free API key): pexels, pixabay, unsplash
  */
 
-export const PROVIDERS = {
-  // ── General (free) ─────────────────────────────────────────────────────────
-  all:         { label: '✦ Todos (gratis)',        free: true,  hint: 'Busca en paralelo en Openverse, Wikimedia, NASA, iNaturalist y GBIF' },
-  openverse:   { label: 'Openverse',               free: true,  hint: 'Sin API key — Millones de imágenes' },
-  wikimedia:   { label: 'Wikimedia Commons',       free: true,  hint: 'Sin API key — Contenido enciclopédico' },
-  nasa:        { label: 'NASA Images',             free: true,  hint: 'Sin API key — Ciencia, espacio y tecnología' },
-  inaturalist: { label: 'iNaturalist',             free: true,  hint: 'Sin API key — Naturaleza y biodiversidad' },
-  gbif:        { label: 'GBIF',                    free: true,  hint: 'Sin API key — Biodiversidad global' },
-  // ── Arte (free) ─────────────────────────────────────────────────────────────
-  allart:      { label: '🎨 Todos los museos',      free: true,  hint: 'Busca en paralelo en Art Institute of Chicago, Cleveland Museum y más' },
-  artic:       { label: 'Art Institute Chicago',   free: true,  hint: 'Sin API key — 300 000+ obras, IIIF de alta resolución' },
-  cleveland:   { label: 'Cleveland Museum of Art', free: true,  hint: 'Sin API key — 61 000+ obras en acceso abierto' },
-  // ── Arte (key gratuita) ─────────────────────────────────────────────────────
-  rijksmuseum: { label: 'Rijksmuseum',             free: false, hint: 'API key gratuita en data.rijksmuseum.nl — Arte neerlandés e internacional' },
-  prado:       { label: 'Museo del Prado',         free: false, hint: 'Usa tu API key de Europeana (pro.europeana.eu) — Colección completa del Prado' },
-  europeana:   { label: 'Europeana',               free: false, hint: 'API key gratuita en pro.europeana.eu — Patrimonio cultural europeo' },
-  // ── Fotografía (key gratuita) ───────────────────────────────────────────────
-  google:      { label: 'Google Images',           free: false, hint: 'API key + CX ID — 100 búsquedas/día gratis (console.cloud.google.com)', cx: true },
-  pexels:      { label: 'Pexels',                  free: false, hint: 'API key gratuita en pexels.com/api' },
-  pixabay:     { label: 'Pixabay',                 free: false, hint: 'API key gratuita en pixabay.com/api' },
-  unsplash:    { label: 'Unsplash',                free: false, hint: 'Access key gratuita en unsplash.com/developers' },
+const searchCache = new Map()
+const MAX_CACHE_SIZE = 60
+
+const PROVIDER_NAMES = {
+  rijksmuseum: 'Rijksmuseum',
+  prado: 'Museo del Prado',
+  europeana: 'Europeana',
+  google: 'Google Images',
+  pexels: 'Pexels',
+  pixabay: 'Pixabay',
+  unsplash: 'Unsplash',
 }
 
-const searchCache = new Map()
+export function getProviderConfigError(config) {
+  const { imgProvider, imgKey, googleCx } = config
+  const needsKey = ['rijksmuseum', 'prado', 'europeana', 'google', 'pexels', 'pixabay', 'unsplash']
+  if (needsKey.includes(imgProvider) && !imgKey) {
+    return { key: 'images.requiresKey', params: { provider: PROVIDER_NAMES[imgProvider] ?? imgProvider } }
+  }
+  if (imgProvider === 'google' && imgKey && !googleCx) {
+    return { key: 'images.requiresGoogleCx', params: {} }
+  }
+  return null
+}
 
 function getCacheKey(query, config) {
   return [
@@ -53,6 +53,9 @@ export async function searchImages(query, config) {
     throw error
   })
 
+  if (searchCache.size >= MAX_CACHE_SIZE) {
+    searchCache.delete(searchCache.keys().next().value)
+  }
   searchCache.set(cacheKey, request)
   return request
 }
@@ -75,7 +78,7 @@ async function executeSearch(q, config) {
     case 'pexels':      return searchPexels(q, config.imgKey)
     case 'pixabay':     return searchPixabay(q, config.imgKey)
     case 'unsplash':    return searchUnsplash(q, config.imgKey)
-    default: throw new Error('Proveedor no reconocido: ' + config.imgProvider)
+    default: throw new Error('Unknown image provider: ' + config.imgProvider)
   }
 }
 
@@ -308,7 +311,7 @@ async function searchCleveland(query) {
 // ── RIJKSMUSEUM ────────────────────────────────────────────────────────────────
 // Docs: https://data.rijksmuseum.nl/object-metadata/api/ — Free API key
 async function searchRijksmuseum(query, apiKey) {
-  if (!apiKey) throw new Error('Rijksmuseum requiere una API key (gratuita en data.rijksmuseum.nl)')
+  if (!apiKey) throw new Error('Rijksmuseum requires an API key (free at data.rijksmuseum.nl)')
   const res = await fetch(`https://www.rijksmuseum.nl/api/en/collection?${new URLSearchParams({
     key:     apiKey,
     q:       query,
@@ -336,7 +339,7 @@ async function searchRijksmuseum(query, apiKey) {
 // Filtra DATA_PROVIDER del Prado sobre la API de Europeana (misma clave gratuita).
 // CORS: YES (heredado de Europeana).
 async function searchPrado(query, apiKey) {
-  if (!apiKey) throw new Error('El Prado requiere una API key de Europeana (gratuita en pro.europeana.eu)')
+  if (!apiKey) throw new Error('Museo del Prado requires a Europeana API key (free at pro.europeana.eu)')
 
   // qf repetido para múltiples filtros — URLSearchParams los serializa como múltiples pares
   const params = new URLSearchParams([
@@ -368,7 +371,7 @@ async function searchPrado(query, apiKey) {
 // Docs: https://pro.europeana.eu/page/search
 // CORS: YES (confirmed). API key gratuita en pro.europeana.eu
 async function searchEuropeana(query, apiKey) {
-  if (!apiKey) throw new Error('Europeana requiere una API key (gratuita en pro.europeana.eu)')
+  if (!apiKey) throw new Error('Europeana requires an API key (free at pro.europeana.eu)')
 
   const url = `https://api.europeana.eu/api/v2/search.json?${new URLSearchParams({
     wskey:   apiKey,
@@ -432,8 +435,8 @@ async function searchGBIF(query) {
 //   2. Crea un motor en cse.google.com → activa "Buscar en toda la web"
 //   3. Copia el CX (ID del motor)
 async function searchGoogle(query, apiKey, cx) {
-  if (!apiKey) throw new Error('Google requiere una API key')
-  if (!cx)     throw new Error('Google requiere el ID del motor de búsqueda (CX)')
+  if (!apiKey) throw new Error('Google Images requires an API key')
+  if (!cx)     throw new Error('Google Images requires a Search Engine CX ID')
 
   const url = `https://www.googleapis.com/customsearch/v1?${new URLSearchParams({
     key:        apiKey,
@@ -464,7 +467,7 @@ async function searchGoogle(query, apiKey, cx) {
 
 // ── PEXELS ─────────────────────────────────────────────────────────────────────
 async function searchPexels(query, key) {
-  if (!key) throw new Error('Pexels requiere una API key')
+  if (!key) throw new Error('Pexels requires an API key')
   const res = await fetch(
     `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=18&orientation=landscape`,
     { headers: { Authorization: key } }
@@ -484,7 +487,7 @@ async function searchPexels(query, key) {
 
 // ── PIXABAY ────────────────────────────────────────────────────────────────────
 async function searchPixabay(query, key) {
-  if (!key) throw new Error('Pixabay requiere una API key')
+  if (!key) throw new Error('Pixabay requires an API key')
   const res = await fetch(
     `https://pixabay.com/api/?key=${key}&q=${encodeURIComponent(query)}&image_type=photo&per_page=18&orientation=horizontal`
   )
@@ -503,7 +506,7 @@ async function searchPixabay(query, key) {
 
 // ── UNSPLASH ───────────────────────────────────────────────────────────────────
 async function searchUnsplash(query, key) {
-  if (!key) throw new Error('Unsplash requiere una Access Key')
+  if (!key) throw new Error('Unsplash requires an Access Key')
   const res = await fetch(
     `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=18&orientation=landscape`,
     { headers: { Authorization: `Client-ID ${key}` } }
@@ -539,5 +542,5 @@ export async function fetchImageBuffer(url) {
       clearTimeout(timeout)
     }
   }
-  throw new Error('No se pudo descargar la imagen (CORS o timeout)')
+  throw new Error('Could not download image (CORS or timeout)')
 }

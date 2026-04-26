@@ -25,7 +25,7 @@ export default function StepBar() {
             type="button"
             onClick={() => setStep(n)}
             className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors rounded-t-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-              isActive ? 'text-indigo-300' : 'text-slate-500 hover:text-slate-300'
+              isActive ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'
             }`}
             aria-current={isActive ? 'step' : undefined}
           >

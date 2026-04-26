@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useStore } from './store'
 import { useI18n } from './hooks/useI18n'
+import ErrorBoundary from './components/ErrorBoundary'
 import Header from './components/Header'
 import StepBar from './components/StepBar'
 
@@ -28,6 +29,7 @@ function StepFallback() {
 export default function App() {
   const step = useStore((state) => state.step)
   const language = useStore((state) => state.language)
+  const { t } = useI18n()
 
   useEffect(() => {
     document.documentElement.lang = language
@@ -42,25 +44,27 @@ export default function App() {
       </div>
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 pb-20">
-        <Suspense fallback={<StepFallback />}>
-          <AnimatePresence mode="wait">
-            {step === 1 && (
-              <motion.div key="step1" {...slide}>
-                <ConfigStep />
-              </motion.div>
-            )}
-            {step === 2 && (
-              <motion.div key="step2" {...slide}>
-                <UploadStep />
-              </motion.div>
-            )}
-            {step === 3 && (
-              <motion.div key="step3" {...slide}>
-                <AnalysisStep />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Suspense>
+        <ErrorBoundary message={t('app.loadError')}>
+          <Suspense fallback={<StepFallback />}>
+            <AnimatePresence mode="wait">
+              {step === 1 && (
+                <motion.div key="step1" {...slide}>
+                  <ConfigStep />
+                </motion.div>
+              )}
+              {step === 2 && (
+                <motion.div key="step2" {...slide}>
+                  <UploadStep />
+                </motion.div>
+              )}
+              {step === 3 && (
+                <motion.div key="step3" {...slide}>
+                  <AnalysisStep />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Suspense>
+        </ErrorBoundary>
       </main>
     </div>
   )

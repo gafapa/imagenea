@@ -63,50 +63,56 @@ async function fetchModels(config) {
 
 function KeyGuide({ guide, openLabel }) {
   const [open, setOpen] = useState(false)
+  const panelId = `key-guide-${guide?.title?.replace(/\s+/g, '-').toLowerCase() ?? 'panel'}`
 
   if (!guide) return null
 
   return (
-    <div className="rounded-xl border border-indigo-700/30 overflow-hidden">
+    <div className="rounded-xl border border-indigo-200 overflow-hidden">
       <button
         type="button"
+        id={`${panelId}-btn`}
         onClick={() => setOpen((value) => !value)}
-        className="w-full flex items-center justify-between px-3 py-2.5 bg-indigo-900/20 hover:bg-indigo-900/30 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        className="w-full flex items-center justify-between px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         aria-expanded={open}
+        aria-controls={panelId}
       >
-        <span className="flex items-center gap-2 text-xs font-medium text-indigo-300">
+        <span className="flex items-center gap-2 text-xs font-medium text-indigo-700">
           <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
           {guide.title}
         </span>
         <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronDown className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
         </motion.div>
       </button>
 
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
+            id={panelId}
+            role="region"
+            aria-labelledby={`${panelId}-btn`}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-3 py-3 space-y-2 border-t border-indigo-700/20 bg-indigo-950/30">
+            <div className="px-3 py-3 space-y-2 border-t border-indigo-100 bg-indigo-50">
               <ol className="space-y-1.5">
                 {guide.steps.map((step, index) => (
                   <li key={`${step.text}-${index}`} className="flex items-start gap-2">
-                    <span className="w-4 h-4 rounded-full bg-indigo-600/40 text-indigo-300 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="w-4 h-4 rounded-full bg-indigo-200 text-indigo-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                       {index + 1}
                     </span>
-                    <span className="text-xs text-slate-300 flex-1">
+                    <span className="text-xs text-slate-700 flex-1">
                       {step.text}
                       {step.url && (
                         <a
                           href={step.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-0.5 ml-1.5 text-indigo-400 hover:text-indigo-300 hover:underline"
+                          className="inline-flex items-center gap-0.5 ml-1.5 text-indigo-600 hover:text-indigo-700 hover:underline"
                         >
                           {openLabel} <ExternalLink className="w-2.5 h-2.5" />
                         </a>
@@ -117,7 +123,7 @@ function KeyGuide({ guide, openLabel }) {
               </ol>
 
               {guide.note && (
-                <p className="text-[11px] text-slate-500 border-t border-indigo-700/20 pt-2 mt-2">
+                <p className="text-[11px] text-slate-500 border-t border-indigo-100 pt-2 mt-2">
                   {guide.note}
                 </p>
               )}
@@ -127,7 +133,7 @@ function KeyGuide({ guide, openLabel }) {
                   href={guide.modelUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-indigo-400 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
                 >
                   <ExternalLink className="w-3 h-3" /> {guide.modelLabel}
                 </a>
@@ -238,14 +244,14 @@ export default function ConfigStep() {
         <h1 className="text-2xl font-bold mb-2">
           <span className="gradient-text">{t('config.title')}</span>
         </h1>
-        <p className="text-slate-400 text-sm max-w-lg mx-auto">{t('config.subtitle')}</p>
+        <p className="text-slate-500 text-sm max-w-lg mx-auto">{t('config.subtitle')}</p>
       </motion.div>
 
       <div className="grid md:grid-cols-2 gap-5">
         <section className="glass p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-indigo-400" />
-            <h2 className="font-semibold text-sm text-slate-200">{t('config.aiSection')}</h2>
+            <Zap className="w-4 h-4 text-indigo-600" />
+            <h2 className="font-semibold text-sm text-slate-800">{t('config.aiSection')}</h2>
           </div>
 
           <div>
@@ -263,7 +269,7 @@ export default function ConfigStep() {
             </select>
           </div>
 
-          {config.aiProvider !== 'openrouter' && (
+          {aiProvider.defaultUrl && (
             <div>
               <label className="block text-xs text-slate-500 mb-1.5">{t('config.serverUrl')}</label>
               <input
@@ -271,7 +277,7 @@ export default function ConfigStep() {
                 value={config.aiUrl}
                 onChange={(event) => setConfig({ aiUrl: event.target.value })}
                 className="input-base"
-                placeholder="http://localhost:11434"
+                placeholder={aiProvider.defaultUrl}
               />
             </div>
           )}
@@ -283,7 +289,7 @@ export default function ConfigStep() {
                 type="button"
                 onClick={refreshModels}
                 disabled={loadingModels}
-                className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-40 transition-colors"
+                className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 disabled:opacity-40 transition-colors"
               >
                 <RefreshCw className={`w-3 h-3 ${loadingModels ? 'animate-spin' : ''}`} />
                 {loadingModels ? t('common.loading') : t('config.refreshModels')}
@@ -311,8 +317,8 @@ export default function ConfigStep() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-                  <p className="text-xs text-slate-600 mt-1">
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <p className="text-xs text-slate-400 mt-1">
                     {t('config.availableModels', { count: models.length })}
                   </p>
                 </motion.div>
@@ -325,7 +331,7 @@ export default function ConfigStep() {
                     className="input-base"
                     placeholder="llama3.2"
                   />
-                  <p className="text-xs text-slate-600 mt-1">{t('config.modelHelp')}</p>
+                  <p className="text-xs text-slate-400 mt-1">{t('config.modelHelp')}</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -355,10 +361,10 @@ export default function ConfigStep() {
               type="button"
               onClick={testConnection}
               disabled={testing}
-              className="btn-ghost text-xs py-1.5 px-3 border border-surface-border hover:border-indigo-500/50"
+              className="btn-ghost text-xs py-1.5 px-3 border border-slate-200 hover:border-indigo-400"
             >
               {testing ? (
-                <span className="inline-block w-3.5 h-3.5 border border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                <span className="inline-block w-3.5 h-3.5 border border-indigo-500 border-t-transparent rounded-full animate-spin" />
               ) : (
                 <Zap className="w-3.5 h-3.5" />
               )}
@@ -369,7 +375,7 @@ export default function ConfigStep() {
               <motion.div
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`flex items-start gap-1.5 mt-2 text-xs ${testStatus === 'ok' ? 'text-green-400' : 'text-red-400'}`}
+                className={`flex items-start gap-1.5 mt-2 text-xs ${testStatus === 'ok' ? 'text-green-600' : 'text-red-600'}`}
               >
                 {testStatus === 'ok' ? (
                   <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
@@ -388,8 +394,8 @@ export default function ConfigStep() {
 
         <section className="glass p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <Image className="w-4 h-4 text-violet-400" />
-            <h2 className="font-semibold text-sm text-slate-200">{t('config.imageSection')}</h2>
+            <Image className="w-4 h-4 text-violet-600" />
+            <h2 className="font-semibold text-sm text-slate-800">{t('config.imageSection')}</h2>
           </div>
 
           <div>
@@ -410,9 +416,9 @@ export default function ConfigStep() {
           </div>
 
           {imgProvider.free ? (
-            <div className="flex items-center gap-2 rounded-xl bg-green-900/20 border border-green-800/30 px-3 py-2.5">
-              <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-              <p className="text-xs text-green-300">{t('config.noKeyRequired')}</p>
+            <div className="flex items-center gap-2 rounded-xl bg-green-50 border border-green-200 px-3 py-2.5">
+              <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+              <p className="text-xs text-green-700">{t('config.noKeyRequired')}</p>
             </div>
           ) : (
             <div className="space-y-3">
