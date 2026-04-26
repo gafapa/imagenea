@@ -12,7 +12,6 @@
 
 const PROTOCOL_NAME = 'proxy-extension-bridge'
 const PROTOCOL_VERSION = 1
-const APP_SOURCE = 'moodle-analyzer-web'
 const EXTENSION_SOURCE = 'proxy-extension'
 
 const MSG = {
@@ -31,7 +30,7 @@ function generateId() {
 
 function post(type, extra = {}) {
   window.postMessage(
-    { source: APP_SOURCE, protocol: PROTOCOL_NAME, version: PROTOCOL_VERSION, type, ...extra },
+    { protocol: PROTOCOL_NAME, version: PROTOCOL_VERSION, type, ...extra },
     window.location.origin,
   )
 }
