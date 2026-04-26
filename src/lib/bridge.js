@@ -12,7 +12,7 @@
 
 const PROTOCOL_NAME = 'proxy-extension-bridge'
 const PROTOCOL_VERSION = 1
-const APP_SOURCE = 'imagenea'
+const APP_SOURCE = 'moodle-analyzer-web'
 const EXTENSION_SOURCE = 'proxy-extension'
 
 const MSG = {
