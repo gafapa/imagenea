@@ -68,6 +68,7 @@ const translations = {
       connectionError: 'Error de conexión: {{message}}',
       corsWarning: 'La app está en {{host}} pero {{provider}} usa localhost. Las peticiones pueden bloquearse por CORS. Escribe el modelo manualmente o inicia Ollama con: OLLAMA_ORIGINS={{host}}',
       corsError: 'Bloqueado por CORS. Escribe el modelo manualmente o configura OLLAMA_ORIGINS={{host}} en Ollama.',
+      bridgeActive: 'Extensión proxy activa · las peticiones a localhost se enrutan automáticamente',
     },
     upload: {
       title: 'Carga tu documento',
@@ -168,6 +169,7 @@ const translations = {
       connectionError: 'Connection error: {{message}}',
       corsWarning: 'App running at {{host}} but {{provider}} uses localhost. Requests may be blocked by CORS. Type the model manually or start Ollama with: OLLAMA_ORIGINS={{host}}',
       corsError: 'Blocked by CORS. Type the model name manually or set OLLAMA_ORIGINS={{host}} in Ollama.',
+      bridgeActive: 'Proxy extension active · localhost requests are routed automatically',
     },
     upload: {
       title: 'Upload your document',
@@ -251,6 +253,7 @@ const translations = {
       connectionError: 'Erreur de connexion : {{message}}',
       corsWarning: "L'app tourne sur {{host}} mais {{provider}} utilise localhost. Les requêtes peuvent être bloquées par CORS. Saisissez le modèle manuellement ou lancez Ollama avec : OLLAMA_ORIGINS={{host}}",
       corsError: 'Bloqué par CORS. Saisissez le modèle manuellement ou définissez OLLAMA_ORIGINS={{host}} dans Ollama.',
+      bridgeActive: 'Extension proxy active · les requêtes vers localhost sont routées automatiquement',
     },
     upload: {
       title: 'Importez votre document',
@@ -334,6 +337,7 @@ const translations = {
       connectionError: 'Verbindungsfehler: {{message}}',
       corsWarning: 'App läuft auf {{host}}, aber {{provider}} nutzt localhost. Anfragen können durch CORS blockiert werden. Modell manuell eingeben oder Ollama starten mit: OLLAMA_ORIGINS={{host}}',
       corsError: 'Durch CORS blockiert. Modellname manuell eingeben oder OLLAMA_ORIGINS={{host}} in Ollama setzen.',
+      bridgeActive: 'Proxy-Erweiterung aktiv · localhost-Anfragen werden automatisch weitergeleitet',
     },
     upload: {
       title: 'Dokument hochladen',
@@ -417,6 +421,7 @@ const translations = {
       connectionError: 'Erro de ligação: {{message}}',
       corsWarning: 'A app está em {{host}} mas {{provider}} usa localhost. Os pedidos podem ser bloqueados por CORS. Escreva o modelo manualmente ou inicie o Ollama com: OLLAMA_ORIGINS={{host}}',
       corsError: 'Bloqueado por CORS. Escreva o nome do modelo manualmente ou configure OLLAMA_ORIGINS={{host}} no Ollama.',
+      bridgeActive: 'Extensão proxy ativa · os pedidos a localhost são encaminhados automaticamente',
     },
     upload: {
       title: 'Carregue o seu documento',
@@ -500,6 +505,7 @@ const translations = {
       connectionError: 'Erro de conexión: {{message}}',
       corsWarning: 'A app está en {{host}} pero {{provider}} usa localhost. As solicitudes poden bloquearse por CORS. Escribe o modelo manualmente ou inicia Ollama con: OLLAMA_ORIGINS={{host}}',
       corsError: 'Bloqueado por CORS. Escribe o nome do modelo manualmente ou configura OLLAMA_ORIGINS={{host}} en Ollama.',
+      bridgeActive: 'Extensión proxy activa · as solicitudes a localhost enrútanse automaticamente',
     },
     upload: {
       title: 'Carga o teu documento',
@@ -583,6 +589,7 @@ const translations = {
       connectionError: 'Error de connexió: {{message}}',
       corsWarning: "L'app funciona a {{host}} però {{provider}} usa localhost. Les peticions poden ser bloquejades per CORS. Escriu el model manualment o inicia Ollama amb: OLLAMA_ORIGINS={{host}}",
       corsError: 'Bloquejat per CORS. Escriu el nom del model manualment o configura OLLAMA_ORIGINS={{host}} a Ollama.',
+      bridgeActive: 'Extensió proxy activa · les peticions a localhost es redirigeixen automàticament',
     },
     upload: {
       title: 'Carrega el teu document',
@@ -666,6 +673,7 @@ const translations = {
       connectionError: 'Konexio errorea: {{message}}',
       corsWarning: 'Aplikazioa {{host}}-n dago baina {{provider}}-k localhost erabiltzen du. Eskaerak CORS-ek blokeatu ditzake. Sartu ereduaren izena eskuz edo hasi Ollama honekin: OLLAMA_ORIGINS={{host}}',
       corsError: 'CORS-ek blokeatuta. Sartu ereduaren izena eskuz edo konfiguratu OLLAMA_ORIGINS={{host}} Ollama-n.',
+      bridgeActive: 'Proxy hedapena aktibo · localhost eskaerak automatikoki bideratzen dira',
     },
     upload: {
       title: 'Kargatu zure dokumentua',

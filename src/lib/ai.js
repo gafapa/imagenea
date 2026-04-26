@@ -1,10 +1,11 @@
 import { getDocumentLanguageName } from './i18n'
+import { smartFetch } from './bridge'
 
 export async function callAI(messages, config) {
   const { aiProvider, aiUrl, aiModel, aiKey } = config
 
   if (aiProvider === 'ollama') {
-    const response = await fetch(`${aiUrl}/api/chat`, {
+    const response = await smartFetch(`${aiUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: aiModel, messages, stream: false }),
@@ -19,7 +20,7 @@ export async function callAI(messages, config) {
   }
 
   if (aiProvider === 'lmstudio') {
-    const response = await fetch(`${aiUrl}/v1/chat/completions`, {
+    const response = await smartFetch(`${aiUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
