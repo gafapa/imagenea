@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+  AlertTriangle,
   BookOpen,
   CheckCircle,
   ChevronDown,
@@ -24,6 +25,23 @@ import {
 } from '../../lib/providerMeta'
 import { useStore } from '../../store'
 import { useI18n } from '../../hooks/useI18n'
+
+const LOCAL_PROVIDERS = new Set(['ollama', 'lmstudio'])
+
+function isCorsError(error) {
+  return (
+    error instanceof TypeError ||
+    error.message === 'Failed to fetch' ||
+    error.message.includes('CORS') ||
+    error.message.includes('ERR_FAILED') ||
+    error.message.includes('NetworkError')
+  )
+}
+
+function isHosted() {
+  const { hostname } = window.location
+  return hostname !== '' && hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.startsWith('192.168.')
+}
 
 async function fetchModels(config) {
   const { aiProvider, aiUrl, aiKey } = config
@@ -202,6 +220,9 @@ export default function ConfigStep() {
     setTestStatus(null)
   }
 
+  const corsParams = { host: window.location.origin, provider: aiProviders[config.aiProvider]?.displayLabel ?? config.aiProvider }
+  const showCorsWarning = LOCAL_PROVIDERS.has(config.aiProvider) && isHosted()
+
   async function refreshModels() {
     setLoadingModels(true)
     setModels([])
@@ -216,7 +237,10 @@ export default function ConfigStep() {
       }
       toast.success(t('config.modelsLoaded', { count: list.length }))
     } catch (error) {
-      toast.error(t('config.modelsError', { message: error.message }))
+      const msg = isCorsError(error)
+        ? t('config.corsError', corsParams)
+        : t('config.modelsError', { message: error.message })
+      toast.error(msg)
     } finally {
       setLoadingModels(false)
     }
@@ -232,7 +256,7 @@ export default function ConfigStep() {
       setTestMsg(reply.trim().slice(0, 80))
     } catch (error) {
       setTestStatus('error')
-      setTestMsg(error.message)
+      setTestMsg(isCorsError(error) ? t('config.corsError', corsParams) : error.message)
     } finally {
       setTesting(false)
     }
@@ -270,15 +294,29 @@ export default function ConfigStep() {
           </div>
 
           {aiProvider.defaultUrl && (
-            <div>
-              <label className="block text-xs text-slate-500 mb-1.5">{t('config.serverUrl')}</label>
-              <input
-                type="text"
-                value={config.aiUrl}
-                onChange={(event) => setConfig({ aiUrl: event.target.value })}
-                className="input-base"
-                placeholder={aiProvider.defaultUrl}
-              />
+            <div className="space-y-2">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1.5">{t('config.serverUrl')}</label>
+                <input
+                  type="text"
+                  value={config.aiUrl}
+                  onChange={(event) => setConfig({ aiUrl: event.target.value })}
+                  className="input-base"
+                  placeholder={aiProvider.defaultUrl}
+                />
+              </div>
+              {showCorsWarning && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5"
+                >
+                  <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    {t('config.corsWarning', corsParams)}
+                  </p>
+                </motion.div>
+              )}
             </div>
           )}
 
