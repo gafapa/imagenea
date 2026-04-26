@@ -11,6 +11,7 @@ pnpm-debug.log*
 .env.*
 !.env.example
 .agent/
+.agents/
 .metagallego/
 .DS_Store
 Thumbs.db
